@@ -85,17 +85,25 @@
 #endif
 #endif
 
+/* 全局错误信息结构，用于记录解析错误位置 */
 typedef struct {
     const unsigned char *json;
     size_t position;
 } error;
 static error global_error = { NULL, 0 };
 
+/* 函数级注释：获取解析错误的位置指针
+ * @return 指向错误位置的指针，最后一次解析成功则返回NULL
+ */
 CJSON_PUBLIC(const char *) cJSON_GetErrorPtr(void)
 {
     return (const char*) (global_error.json + global_error.position);
 }
 
+/* 函数级注释：获取节点的字符串值
+ * @param item 目标节点
+ * @return 如果是字符串类型返回valuestring，否则返回NULL
+ */
 CJSON_PUBLIC(char *) cJSON_GetStringValue(const cJSON * const item)
 {
     if (!cJSON_IsString(item))
@@ -106,6 +114,10 @@ CJSON_PUBLIC(char *) cJSON_GetStringValue(const cJSON * const item)
     return item->valuestring;
 }
 
+/* 函数级注释：获取节点的数字值
+ * @param item 目标节点
+ * @return 如果是数字类型返回valuedouble，否则返回NAN
+ */
 CJSON_PUBLIC(double) cJSON_GetNumberValue(const cJSON * const item)
 {
     if (!cJSON_IsNumber(item))
@@ -116,11 +128,14 @@ CJSON_PUBLIC(double) cJSON_GetNumberValue(const cJSON * const item)
     return item->valuedouble;
 }
 
-/* This is a safeguard to prevent copy-pasters from using incompatible C and header files */
+/* 关键行注释：版本一致性检查，防止头文件和源文件版本不匹配导致的问题 */
 #if (CJSON_VERSION_MAJOR != 1) || (CJSON_VERSION_MINOR != 7) || (CJSON_VERSION_PATCH != 19)
     #error cJSON.h and cJSON.c have different versions. Make sure that both have the same.
 #endif
 
+/* 函数级注释：获取cJSON库版本字符串
+ * @return 静态分配的版本字符串，无需释放
+ */
 CJSON_PUBLIC(const char*) cJSON_Version(void)
 {
     static char version[15];
@@ -129,7 +144,10 @@ CJSON_PUBLIC(const char*) cJSON_Version(void)
     return version;
 }
 
-/* Case insensitive string comparison, doesn't consider two NULL pointers equal though */
+/* 函数级注释：不区分大小写的字符串比较
+ * @return 相等返回0，不相等返回非0
+ * @note 两个NULL指针被认为不相等
+ */
 static int case_insensitive_strcmp(const unsigned char *string1, const unsigned char *string2)
 {
     if ((string1 == NULL) || (string2 == NULL))
@@ -153,6 +171,7 @@ static int case_insensitive_strcmp(const unsigned char *string1, const unsigned 
     return tolower(*string1) - tolower(*string2);
 }
 
+/* 内部内存钩子结构，比公开的cJSON_Hooks多了一个reallocate */
 typedef struct internal_hooks
 {
     void *(CJSON_CDECL *allocate)(size_t size);
@@ -185,6 +204,9 @@ static void * CJSON_CDECL internal_realloc(void *pointer, size_t size)
 
 static internal_hooks global_hooks = { internal_malloc, internal_free, internal_realloc };
 
+/* 函数级注释：字符串拷贝，使用钩子函数分配内存
+ * @return 新分配的字符串拷贝，需要调用者释放
+ */
 static unsigned char* cJSON_strdup(const unsigned char* string, const internal_hooks * const hooks)
 {
     size_t length = 0;
@@ -206,6 +228,9 @@ static unsigned char* cJSON_strdup(const unsigned char* string, const internal_h
     return copy;
 }
 
+/* 函数级注释：初始化内存管理钩子
+ * @param hooks 用户提供的钩子函数，为NULL时恢复默认的malloc/free/realloc
+ */
 CJSON_PUBLIC(void) cJSON_InitHooks(cJSON_Hooks* hooks)
 {
     if (hooks == NULL)
@@ -249,7 +274,10 @@ static cJSON *cJSON_New_Item(const internal_hooks * const hooks)
     return node;
 }
 
-/* Delete a cJSON structure. */
+/* 函数级注释：递归删除cJSON树，释放所有相关内存
+ * @param item 要删除的根节点，为NULL时无操作
+ * @note 处理引用标记(cJSON_IsReference)时不会释放被引用的子节点
+ */
 CJSON_PUBLIC(void) cJSON_Delete(cJSON *item)
 {
     cJSON *next = NULL;
@@ -275,7 +303,8 @@ CJSON_PUBLIC(void) cJSON_Delete(cJSON *item)
     }
 }
 
-/* get the decimal point character of the current locale */
+/* 关键行注释：获取当前locale的小数点字符，用于strtod转换
+ * 因为JSON标准要求使用'.'，而不同locale可能使用',' */
 static unsigned char get_decimal_point(void)
 {
 #ifdef ENABLE_LOCALES
@@ -295,7 +324,7 @@ typedef struct
     internal_hooks hooks;
 } parse_buffer;
 
-/* check if the given size is left to read in a given parse buffer (starting with 1) */
+/* 辅助宏：检查缓冲区是否可读指定大小的数据 */
 #define can_read(buffer, size) ((buffer != NULL) && (((buffer)->offset + size) <= (buffer)->length))
 /* check if the buffer can be accessed at the given index (starting with 0) */
 #define can_access_at_index(buffer, index) ((buffer != NULL) && (((buffer)->offset + index) < (buffer)->length))
@@ -693,8 +722,13 @@ static unsigned parse_hex4(const unsigned char * const input)
     return h;
 }
 
-/* converts a UTF-16 literal to UTF-8
- * A literal can be one or two sequences of the form \uXXXX */
+/* 函数级注释：将UTF-16字面量(\uXXXX)转换为UTF-8
+ * @param input_pointer 指向'\u'的指针
+ * @param input_end 缓冲区结束位置
+ * @param output_pointer 输出位置指针，转换后更新
+ * @return 消耗的输入字节数(6或12)，失败返回0
+ * @note 处理代理对(surrogate pair)
+ */
 static unsigned char utf16_literal_to_utf8(const unsigned char * const input_pointer, const unsigned char * const input_end, unsigned char **output_pointer)
 {
     long unsigned int codepoint = 0;

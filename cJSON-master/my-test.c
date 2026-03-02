@@ -5,16 +5,24 @@
 int main() {
     // 创建一个简单的JSON对象
     cJSON *root = cJSON_CreateObject();
+    if (root == NULL) {
+        printf("Failed to create JSON object\n");
+        return 1;
+    }
+    
     cJSON_AddStringToObject(root, "message", "Hello, cJSON!");
-    cJSON_AddNumberToObject(root, "version", 1.0);
     
     // 将JSON对象转换为字符串
     char *json_str = cJSON_Print(root);
-    printf("生成的JSON: %s\n", json_str);
+    if (json_str != NULL) {
+        printf("JSON: %s\n", json_str);
+        free(json_str);
+    }
     
     // 释放内存
     cJSON_Delete(root);
-    free(json_str);
-    printf("cJSON 测试成功!\n");
+    
+    printf("程序执行成功！按回车键退出...\n");
+    getchar();  // 等待用户按回车
     return 0;
 }

@@ -571,6 +571,24 @@ CJSON_PUBLIC(void *) cJSON_malloc(size_t size);
  */
 CJSON_PUBLIC(void) cJSON_free(void *object);
 
+/* ******************************* 美化打印功能 ******************************* */
+
+/**
+ * @brief 将cJSON树渲染为美化格式的JSON字符串（2空格缩进）
+ * @param item 要渲染的cJSON节点
+ * @return 成功返回动态分配的字符串，需要调用者使用cJSON_free()释放
+ */
+CJSON_PUBLIC(char *) cJSON_PrintPretty(const cJSON *item);
+
+/**
+ * @brief 将cJSON树渲染为美化格式的JSON字符串（可自定义缩进）
+ * @param item 要渲染的cJSON节点
+ * @param indent_size 缩进空格数（当use_tabs为0时有效）
+ * @param use_tabs 是否使用制表符缩进（1:制表符，0:空格）
+ * @return 成功返回动态分配的字符串，需要调用者使用cJSON_free()释放
+ */
+CJSON_PUBLIC(char *) cJSON_PrintPrettyEx(const cJSON *item, int indent_size, char use_tabs);
+
 #ifdef __cplusplus
 }
 #endif

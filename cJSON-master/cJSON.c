@@ -1413,7 +1413,7 @@ static char *print_pretty(const cJSON * const item, int indent_size, char use_ta
 
 CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item)
 {
-    return (char*)print(item, true, &global_hooks);
+    return print_pretty(item, 2, 0); 
 }
 
 CJSON_PUBLIC(char *) cJSON_PrintUnformatted(const cJSON *item)
